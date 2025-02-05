@@ -23,14 +23,9 @@ Use [caniuse.com](https://caniuse.com) to determine whether you can use a given 
 
 {% include requirement/SHOULDNOT id="ts-no-ie11-support" %} support IE11. If you have a business justification for IE11 support, contact the [Architecture Board].
 
-{% include requirement/MUST id="ts-support-ts" %} compile without errors on all versions of TypeScript greater than 3.1.
+{% include requirement/MUST id="ts-support-ts" %} compile without errors on all versions of TypeScript that are less than 2 years old. This aligns with the support window of [Definitely Typed](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master#support-window), a popular repository of type definitions.
 
-While consumers are fast at adopting new versions of TypeScript, version 3.1 is used by Angular 7, which is still commonly used.  Supporting older versions of TypeScript can be a challenge. There are two general approaches:
-
-1. Don't use new features.
-2. Use [`typesVersions`](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-1.html#version-selection-with-typesversions), which might require manual effort to produce typings compatible with older versions based on the new typings.
-
-{% include requirement/MUST id="ts-register-dropped-platforms" %} get approval from the [Architecture Board] to drop support for any platform (except IE11 and Node 6) even if support isn't required.
+{% include requirement/MUST id="ts-register-dropped-platforms" %} get approval from the [Architecture Board] to drop support for any platform (except IE11) even if support isn't required.
 
 ## Namespaces, NPM Scopes, and Distribution Tags {#ts-namespace}
 
@@ -157,7 +152,7 @@ class ExampleClient {
 
 The guidelines in this section apply to options passed in options bags to clients, whether methods or constructors. When referring to option names, this means the key of the object users must use to specify that option when passing it into a method or constructor.
 
-{% include requirement/MUST id="ts-naming-options" %} name the type of the options bag as `<class name>Options` and `<method name>Options` for constructors and methods respectively.
+{% include requirement/MUST id="ts-naming-options" %} name the type of the options bag as `<class name>Options` and `<method name>Options` for constructors and methods respectively. The only exception is when a method does not have any operation-specific options, in which case, the type `OperationOptions` from Azure Core can be used.
 
 {% include requirement/MUST id="ts-options-abortSignal" %} name abort signal options `abortSignal`.
 
@@ -478,13 +473,9 @@ Your `tsconfig.json` should look similar to the following example:
 
 Most developers will want to process a list one item at a time. Higher-level APIs (for example, async iterators) are preferred in the majority of use cases.  Finer-grained control over handling paginated result sets is sometimes required (for example, to handle over-quota or throttling).
 
-{% include requirement/MUST id="ts-pagination-provide-list" %} provide a `list` method that returns a `PagedAsyncIterableIterator` from the module `@azure/core-paging`.
-
-{% include requirement/MUST id="ts-pagination-provide-bypage-settings" %} provide page-related settings to the `byPage()` iterator and not the per-item iterator.
+{% include requirement/MUST id="ts-pagination-provide-list" %} provide a `list` method that returns a `PagedAsyncIterableIterator`.
 
 {% include requirement/MUST id="ts-pagination-take-continuationToken" %} take a `continuationToken` option in the `byPage()` method. You must rename other parameters that perform a similar function (for example, `nextMarker`).  If your page type has a continuation token, it must be named `continuationToken`.
-
-{% include requirement/MUST id="ts-pagination-take-maxpagesize" %} take a `maxPageSize` option in the `byPage()` method.
 
 An example of a paginating client:
 <a name="ts-example-pagination"></a>
@@ -496,53 +487,52 @@ for await (const item of client.listItems()) {
     console.log(item);
 }
 
-for await (const page of client.listItems().byPage({ maxPageSize: 50 })) {
+// usage of continuationToken with byPage
+const previousPage = await client.listItems().byPage().next();
+const continuationToken = previousPage.value.continuationToken
+for await (const page of client.listItems().byPage({ continuationToken })) {
     console.log(page);
 }
 
-// implementation
+// interface 
 interface Item {
     name: string;
 }
 
-interface Page {
-    continuationToken: string;
-    items: Item[];
-}
-
-class ServiceClient {
-    /* ... */
-    listItems(): PagedAsyncIterableIterator<Item, Page> {
-        async function* pages () { /* ... */ }
-        async function* items () {
-            for (const page of pages()) {
-                for (const item of page.items) {
-                    yield item;
-                }
-            }
-        }
-
-        const itemIter = items();
-
-        return {
-            next() {
-                return itemIter.next();
-                /* ... */
-            },
-            byPage() {
-                return pages();
-            },
-            [Symbol.asyncIterator]() { return this }
-        }
-    }
+type ContinuablePage<TElement, TPage = TElement[]> = TPage & {
+  /**
+   * A token that identifies a certain page.
+   */
+  continuationToken?: string;
+};
+/**
+ * An iterator that enables iteration over both items and pages of items.
+ */
+interface PagedAsyncIterableIterator<
+  TElement,
+  TPage = TElement[],
+  TPageSettings extends PageSettings = PageSettings,
+> {
+  /**
+   * The next method, part of the iteration protocol
+   */
+  next(): Promise<IteratorResult<TElement>>;
+  /**
+   * The connection to the async iterator, part of the iteration protocol
+   */
+  [Symbol.asyncIterator](): PagedAsyncIterableIterator<TElement, TPage, TPageSettings>;
+  /**
+   * Return an iterator over pages of items.
+   */
+  byPage: (settings?: TPageSettings) => AsyncIterableIterator<ContinuablePage<TElement, TPage>>;
 }
 ```
-
-{% include requirement/MUST id="general-pagination-paginate-lists" %} expose non-paginated list endpoints identically to paginated list endpoints. Users shouldn't need to appreciate the difference.
 
 {% include requirement/MUST id="general-pagination-distinct-types" %} use different types for entities returned from a `list` endpoint and a `get` endpoint if the returned entities have a different shape.  If both entities are the same form, use the same type.
 
 {% include note.html content="Services should return the same shape for entities from a <code>list</code> endpoint vs. a <code>get</code> endpoint unless there's a good reason for the difference.  Using the same type for both operations will make the API surface in the client library simpler." %}
+
+{% include requirement/MUSTNOT id="ts-pagination-provide-bypage-settings" %} provide page-related settings other than the `continuationToken` to the `byPage()` method.
 
 {% include requirement/MUSTNOT id="general-pagination-no-item-iterators" %} expose an iterator over individual items if it causes additional service requests.  Some services charge on a per-request basis. One `GET` per item is often too expensive when the data isn't used.
 
@@ -661,7 +651,7 @@ TODO: Please add a section on extensible enums, if this is relevant to JS/TS.
 
 ## Support for non-HTTP protocols {#general-other-protocols}
 
-Most Azure services expose a RESTful API over HTTPS.  However, a few services use other protocols, such as [AMQP](https://www.amqp.org/), [MQTT](http://mqtt.org/), or [WebRTC](https://webrtc.org/). In these cases, the operation of the protocol can be split into two phases:
+Most Azure services expose a RESTful API over HTTPS.  However, a few services use other protocols, such as [AMQP](https://www.amqp.org/), [MQTT](https://mqtt.org/), or [WebRTC](https://webrtc.org/). In these cases, the operation of the protocol can be split into two phases:
 
 * Per-connection (surrounding when the connection is initiated and terminated)
 * Per-operation (surrounding when an operation is sent through the open connection)

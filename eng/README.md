@@ -26,6 +26,7 @@ given package ecosystem as well as by reading release tags from our mono repos. 
 - `PlannedVersions` - This field will list a set of versions combined with estimated dates in the format of `[version1],[date1]|[version2],[date2]|[version3],[date3]` with version in the format of `X.Y.Z[bN|-beta.N]` and date in the format of `MM/dd/yyyy`. These dates are intended to be displayed on a roadmap page.
 - `LatestGADate` - Thi field is used to identify the date of when the latest GA package released.
 - `FirstGADate` - This field is used to identify the date of when a new package shipped its first stable release.
+- `FirstPreviewDate` - This field is used to identify the date of when a new package shipped its first preview release.
 - `Support` - This field is used to identify the level of support for the given package. See the [support guidelines](https://azure.github.io/azure-sdk/policies_support.html#package-lifecycle) for more details but this field should contain `beta`, `active`, `deprecated` or `community`, if the value is empty it generally implies unknown or `beta` support level.
 - `EOLDate` - If a package has a Support value of `deprecated` this field provides the date at which the package is end of life (i.e. no longer supported). If a package is marked as `deprecated`, this field must have a valid value.
 - `Hide` - This field will determine whether we hide this package from various places like the package index, docs, as well as automated updates. The value is either true to hide or empty to not hide. This is useful to filter older packages that are still on the package managers, but we don't want to promote or display anywhere.
@@ -34,6 +35,29 @@ given package ecosystem as well as by reading release tags from our mono repos. 
 - `ServiceId` - The id for that represents the service in other internal data sources.
 - `MSDocService` - This field is the value of docs.ms metadata `ms.service`. If it is empty, then ms.service assigns to service directory. The value is defined [here](https://review.docs.microsoft.com/en-us/help/contribute/metadata-taxonomies?branch=main#msservice).
 - `Notes` - This is an open field that can be used to add any particular notes for a given package.
+
+### Spec CSV Fields
+
+- `SpecPath` - Either the path to the `README.md` file that defines the spec files or the folder that contains all the spec files.
+- `SpecReadmeTag` - If configured via a `README.md` the tag (usually default tag) used to find spec file set. Empty if not based on a `README.md`.
+- `SpecValidationErrors` - Can contain a list of potential errors detected while indexing the specs. The possible errors can be:
+    - `SpecFileDoesNotExist` - The references spec file cannot be found to read.
+    - `SpecFileIsNotUnderServiceFolder` - The referenced spec file is outside of the service folder referencing it or the path does not match the standard format.
+    - `SpecTypeMismatchBetweenSpecFiles` - There is a conflict between the type of referenced spec files. Some are `data` and some are `mgmt`.
+    - `VersionTypeMismatchBetweenSpecFiles` - There is conflict between the version type of the referenced spec files. Some are `preview` and some are `stable`.
+    - `SpecPathMismatchBetweenSpecFiles` - There are specs coming from different folder paths, which often means they are from different versions.
+    - `VersionMismatchBetweenSpecFiles` - There are specs files that have conflicting versions. See `Version` field to see a list of versions.
+    - `VersionMismatchBetweenPathAndSpec` - The version in the spec doesn't match the version in the file path where the spec lives.
+- `ServiceFamily` - The folder directly under the specification folder computed by path containing the specs. If there are conflicts the first one is used.
+- `ResourcePath` - The folder between `ServiceFamily` and version computed by the path containing the specs. If there are conflicts the first one is used.
+- `Version` - Version number based on the path containing the specs. If there are conflicting versions it will contain `Varies: <list of versions>`. 
+- `VersionType` - `preview` or `stable` based on the path containing the specs.
+- `Type` - `data` or `mgmt` based on the path containing the specs.
+- `IsTypeSpec` - At least one of the json files contains the `x-typespec-generated` tag.
+- `ServiceLifeCycle` - `Greenfield` if the resource provider hasn't shipped a previous stable verison. Otherwise `Brownfield`.
+- `DateCreated` - Currently this field is unused as we don't have a great way to calculate it. If we figure out a good way we will populate it again.
+- `JsonFiles` - Path to all json spec files relative to the `SpecPath` field.
+
 
 ## Link templates
 
@@ -46,7 +70,7 @@ We also parse those templates in our automation so that when updating we ensure 
 {% assign pre_suffix = "" %}
 {% assign package_url_template = "https://search.maven.org/artifact/item.GroupId/item.Package/item.Version/jar/" %}
 {% assign msdocs_url_template =  "https://docs.microsoft.com/java/api/overview/azure/item.TrimmedPackage-readme" %}
-{% assign ghdocs_url_template = "https://azuresdkdocs.blob.core.windows.net/$web/java/item.Package/item.Version/index.html" %}
+{% assign ghdocs_url_template = "https://azuresdkdocs.z19.web.core.windows.net/java/item.Package/item.Version/index.html" %}
 {% assign source_url_template = "https://github.com/Azure/azure-sdk-for-java/tree/item.Package_item.Version/sdk/item.RepoPath/item.Package/" %}
 ```
 

@@ -64,7 +64,7 @@ Please contact the [Architecture board] for more guidance on non HTTP/REST based
 
 ### Supported python versions
 
-{% include requirement/MUST id="python-general-version-support" %} support Python 3.7+.
+{% include requirement/MUST id="python-general-version-support" %} support Python 3.8+.
 
 ## Azure SDK API Design
 
@@ -113,7 +113,7 @@ client = ExampleClient('https://contoso.com/xmpl',
                        timeout=2)
 ```
 
-{% include requirement/MUST id="python-client-constructor-transport-argument" %} allow users to pass in a `transport` keyword-only argument that allows the caller to specify a specific transport instance. The default value should be the [`RequestsTransport`](https://azuresdkdocs.blob.core.windows.net/$web/python/azure-core/1.1.1/azure.core.pipeline.transport.html?highlight=transport#azure.core.pipeline.transport.RequestsTransport) for synchronous clients and the [`AioHttpTransport`](https://azuresdkdocs.blob.core.windows.net/$web/python/azure-core/1.1.1/azure.core.pipeline.transport.html?highlight=transport#azure.core.pipeline.transport.AioHttpTransport) for async clients.
+{% include requirement/MUST id="python-client-constructor-transport-argument" %} allow users to pass in a `transport` keyword-only argument that allows the caller to specify a specific transport instance. The default value should be the [`RequestsTransport`](https://azuresdkdocs.z19.web.core.windows.net/python/azure-core/latest/azure.core.pipeline.transport.html?highlight=transport#azure.core.pipeline.transport.RequestsTransport) for synchronous clients and the [`AioHttpTransport`](https://azuresdkdocs.z19.web.core.windows.net/python/azure-core/latest/azure.core.pipeline.transport.html?highlight=transport#azure.core.pipeline.transport.AioHttpTransport) for async clients.
 
 {% include requirement/MUST id="python-client-connection-string" %} use a separate factory classmethod `from_connection_string` to create a client from a connection string (if the client supports connection strings). The `from_connection_string` factory method should take the same set of arguments (excluding information provided in the connection string) as the constructor. The constructor (`__init__` method) **must not** take a connection string, even if it means that using the `from_connection_string` is the only supported method to create an instance of the client.
 
@@ -544,11 +544,11 @@ class MyBadEnum(str, Enum):
 
 ### Exceptions
 
-{% include requirement/SHOULD id="python-errors-azure-exceptions" %} prefer raising [existing exception types from the `azure-core`](https://azuresdkdocs.blob.core.windows.net/$web/python/azure-core/1.9.0/index.html#azure-core-library-exceptions) package over creating new exception types.
+{% include requirement/SHOULD id="python-errors-azure-exceptions" %} prefer raising [existing exception types from the `azure-core`](https://azuresdkdocs.z19.web.core.windows.net/python/azure-core/1.9.0/index.html#azure-core-library-exceptions) package over creating new exception types.
 
 {% include requirement/MUSTNOT id="python-errors-use-standard-exceptions" %} create new exception types when a [built-in exception type](https://docs.python.org/3/library/exceptions.html) will suffice.
 
-{% include requirement/SHOULDNOT id="python-errors-new-exceptions" %} create a new exception type unless the developer can handle the error programmatically.  Specialized exception types related to service operation failures should be based on existing exception types from the [`azure-core`](https://azuresdkdocs.blob.core.windows.net/$web/python/azure-core/1.9.0/index.html#azure-core-library-exceptions) package.
+{% include requirement/SHOULDNOT id="python-errors-new-exceptions" %} create a new exception type unless the developer can handle the error programmatically.  Specialized exception types related to service operation failures should be based on existing exception types from the [`azure-core`](https://azuresdkdocs.z19.web.core.windows.net/python/azure-core/1.9.0/index.html#azure-core-library-exceptions) package.
 
 For higher-level methods that use multiple HTTP requests, either the last exception or an aggregate exception of all failures should be produced.
 
@@ -768,7 +768,7 @@ Only applications are expected to pin exact dependencies. Libraries are not. A l
 
 ### Docstrings
 
-{% include requirement/MUST id="python-docstrings-pydocs" %} follow the [documentation guidelines](http://aka.ms/pydocs) unless explicitly overridden in this document.
+{% include requirement/MUST id="python-docstrings-pydocs" %} follow the [documentation guidelines](https://aka.ms/pydocs) unless explicitly overridden in this document.
 
 {% include requirement/MUST id="python-docstrings-all" %} provide docstrings for all public modules, types, constants and functions.
 
@@ -832,7 +832,7 @@ Code samples are small applications that demonstrate a certain feature that is r
 
 {% include requirement/MUST id="python-samples-runnable" %} ensure that each sample file is runnable.
 
-{% include requirement/MUST id="python-samples-coding-style" %} avoid using features newer than the Python 3 baseline support. The current supported Python version is 3.7.
+{% include requirement/MUST id="python-samples-coding-style" %} avoid using features newer than the Python 3 baseline support. The current supported Python version is 3.8.
 
 {% include requirement/MUST id="python-samples-grafting" %} ensure that code samples can be easily grafted from the documentation into a users own application. For example, don't rely on variable declarations in other samples.
 
